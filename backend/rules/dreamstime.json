@@ -1,0 +1,32 @@
+{
+  "platform": "dreamstime",
+  "label": "Dreamstime",
+  "jpg": {
+    "minWidth": 3000,
+    "minHeight": 3000,
+    "mustBeRGB": true,
+    "maxFileSizeMB": 40
+  },
+  "eps": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "allowPlacedItems": false,
+    "requireRGB": false,
+    "requireCMYK": false,
+    "requireObjectsInArtboard": true
+  },
+  "svg": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "minWidth": 400,
+    "minHeight": 400,
+    "maxPathCount": 50000
+  },
+  "aiContent": {
+    "checkTrademark": true,
+    "checkSensitiveContent": true,
+    "suggestKeywords": true,
+    "maxKeywords": 30,
+    "flagThreshold": "medium"
+  }
+}

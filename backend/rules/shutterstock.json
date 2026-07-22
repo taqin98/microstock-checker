@@ -1,0 +1,34 @@
+{
+  "platform": "shutterstock",
+  "label": "Shutterstock",
+  "jpg": {
+    "minWidth": 4000,
+    "minHeight": 4000,
+    "mustBeRGB": true,
+    "maxFileSizeMB": 45
+  },
+  "eps": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "allowPlacedItems": false,
+    "requireRGB": false,
+    "requireCMYK": false,
+    "requireObjectsInArtboard": true
+  },
+  "svg": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "minWidth": 400,
+    "minHeight": 400,
+    "maxPathCount": 50000
+  },
+  "aiContent": {
+    "checkTrademark": true,
+    "prohibitIntellectualProperty": true,
+    "checkSensitiveContent": true,
+    "prohibitAiGenerated": true,
+    "suggestKeywords": true,
+    "maxKeywords": 50,
+    "flagThreshold": "medium"
+  }
+}

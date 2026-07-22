@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <rect x="0" y="0" width="800" height="600" fill="#f0f0f0"/>
+  <text x="400" y="300" font-family="Arial" font-size="48" fill="#333" text-anchor="middle">Hello World</text>
+  <tspan x="400" dy="60" font-size="24" fill="#666">This text is not outlined</tspan>
+  <path d="M100,500 L700,500" stroke="#999" stroke-width="2"/>
+</svg>

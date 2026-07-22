@@ -1,0 +1,32 @@
+{
+  "platform": "pond5",
+  "label": "Pond5",
+  "jpg": {
+    "minWidth": 3000,
+    "minHeight": 3000,
+    "mustBeRGB": true,
+    "maxFileSizeMB": 50
+  },
+  "eps": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "allowPlacedItems": false,
+    "requireRGB": false,
+    "requireCMYK": false,
+    "requireObjectsInArtboard": false
+  },
+  "svg": {
+    "requireOutlinedText": true,
+    "allowEmbeddedRaster": false,
+    "minWidth": 400,
+    "minHeight": 400,
+    "maxPathCount": 50000
+  },
+  "aiContent": {
+    "checkTrademark": true,
+    "checkSensitiveContent": true,
+    "suggestKeywords": true,
+    "maxKeywords": 40,
+    "flagThreshold": "medium"
+  }
+}
