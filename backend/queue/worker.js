@@ -18,6 +18,7 @@ import {
 } from '../db/database.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../utils/logger.js';
+import { findEpsPreviewPath } from '../utils/eps-preview.js';
 
 dotenv.config();
 
@@ -129,6 +130,11 @@ const epsWorker = new Worker('eps-check', async (job) => {
 
   const rules = getRules(asset.platform);
   const result = await checkEps(asset.file_path, rules);
+  const previewPath = result.info.previewPath || findEpsPreviewPath(asset.file_path);
+
+  if (previewPath) {
+    result.info.previewPath = previewPath;
+  }
 
   insertCheckResult({
     id: uuidv4(),
@@ -144,16 +150,19 @@ const epsWorker = new Worker('eps-check', async (job) => {
 
   // Trigger AI content check using the generated JPG preview
   const aiRules = rules.aiContent || {};
-  const shouldRunAi = Boolean(result.info.previewPath)
-    && (aiRules.checkTrademark || aiRules.checkSensitiveContent || aiRules.suggestKeywords);
+  const aiEnabled = aiRules.checkTrademark || aiRules.checkSensitiveContent || aiRules.suggestKeywords;
+  const shouldRunAi = Boolean(previewPath) && aiEnabled;
   if (shouldRunAi) {
     await aiCheckQueue.add(
       'ai-check',
-      { assetId, previewPath: result.info.previewPath, forceRefresh: forceAiRefresh },
+      { assetId, previewPath, forceRefresh: forceAiRefresh },
       { jobId: `ai-${assetId}-${Date.now()}` },
     );
     addAssetLog(assetId, 'Technical check complete. Waiting for AI content analysis');
     log.info(`[EPS] Enqueued AI check for ${assetId} using generated preview`);
+  } else if (aiEnabled) {
+    addAssetLog(assetId, 'AI content analysis skipped because no EPS preview was found');
+    log.warn(`[EPS] AI check skipped for ${assetId}: preview not found`);
   }
 
   // Check if cross-check should run

@@ -33,6 +33,19 @@ describe('EPS preview paths', () => {
     assert.equal(findEpsPreviewPath(epsPath), normalizedPreviewPath);
   });
 
+  it('prefers the canonical preview when canonical and normalized files both exist', (t) => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'eps-preview-test-'));
+    t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+
+    const epsPath = path.join(directory, 'Harvest Basket.eps');
+    const canonicalPreviewPath = getEpsPreviewPath(epsPath);
+    const normalizedPreviewPath = path.join(directory, 'Harvest-Basket.eps.preview.jpg');
+    fs.writeFileSync(canonicalPreviewPath, 'canonical');
+    fs.writeFileSync(normalizedPreviewPath, 'normalized');
+
+    assert.equal(findEpsPreviewPath(epsPath), canonicalPreviewPath);
+  });
+
   it('includes Illustrator suffix variants', () => {
     const candidates = getIllustratorExportCandidates('/tmp/Harvest Basket.eps.preview.jpg');
 
