@@ -66,6 +66,13 @@ export async function recheckJob(id) {
   return res.json();
 }
 
+export async function updateMetadataCategories(id, categories) {
+  return request(`/jobs/${id}/metadata-categories`, {
+    method: 'PATCH',
+    body: JSON.stringify({ categories }),
+  });
+}
+
 export function getFileUrl(id) {
   return `${API_BASE}/jobs/${id}/file`;
 }

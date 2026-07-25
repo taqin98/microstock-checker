@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS assets (
   pair_group TEXT,
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'done', 'error')),
   process_logs TEXT DEFAULT '[]',
+  metadata_categories TEXT DEFAULT '[]',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

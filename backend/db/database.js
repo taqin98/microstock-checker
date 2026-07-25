@@ -27,6 +27,31 @@ try {
   // Column already exists
 }
 
+try {
+  db.exec("ALTER TABLE assets ADD COLUMN metadata_categories TEXT DEFAULT '[]'");
+} catch (e) {
+  // Column already exists
+}
+
+function parseJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function hydrateAsset(row) {
+  if (!row) return null;
+
+  return {
+    ...row,
+    process_logs: parseJsonArray(row.process_logs),
+    metadata_categories: parseJsonArray(row.metadata_categories),
+  };
+}
+
 // --- Asset helpers ---
 
 export function insertAsset({ id, originalName, filePath, fileType, fileSize, platform, pairGroup }) {
@@ -39,18 +64,23 @@ export function insertAsset({ id, originalName, filePath, fileType, fileSize, pl
 
 export function getAsset(id) {
   const row = db.prepare('SELECT * FROM assets WHERE id = ?').get(id);
-  if (row) {
-    row.process_logs = row.process_logs ? JSON.parse(row.process_logs) : [];
-  }
-  return row;
+  return hydrateAsset(row);
 }
 
 export function getAllAssets() {
-  return db.prepare('SELECT * FROM assets ORDER BY created_at DESC').all();
+  return db.prepare('SELECT * FROM assets ORDER BY created_at DESC').all().map(hydrateAsset);
 }
 
 export function updateAssetStatus(id, status) {
   return db.prepare('UPDATE assets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+}
+
+export function updateAssetMetadataCategories(id, categories) {
+  return db.prepare(`
+    UPDATE assets
+    SET metadata_categories = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(JSON.stringify(categories), id);
 }
 
 export function addAssetLog(id, message) {
@@ -75,7 +105,7 @@ export function resetAssetForRecheck(id) {
 }
 
 export function getAssetsByPairGroup(pairGroup) {
-  return db.prepare('SELECT * FROM assets WHERE pair_group = ?').all(pairGroup);
+  return db.prepare('SELECT * FROM assets WHERE pair_group = ?').all(pairGroup).map(hydrateAsset);
 }
 
 // --- Check result helpers ---
@@ -148,6 +178,7 @@ export function getJobsWithResults() {
   const resultsStmt = db.prepare('SELECT * FROM check_results WHERE asset_id = ?');
 
   return assets.map((asset) => {
+    const hydratedAsset = hydrateAsset(asset);
     const results = resultsStmt.all(asset.id).map((r) => ({
       ...r,
       valid: !!r.valid,
@@ -161,8 +192,7 @@ export function getJobsWithResults() {
     const overallResult = hasErrors ? 'fail' : hasWarnings ? 'warning' : 'pass';
 
     return {
-      ...asset,
-      process_logs: asset.process_logs ? JSON.parse(asset.process_logs) : [],
+      ...hydratedAsset,
       results,
       overallResult: asset.status === 'done' ? overallResult : null,
     };

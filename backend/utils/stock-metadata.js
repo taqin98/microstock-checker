@@ -55,3 +55,37 @@ export function normalizeStockMetadata(aiResult, rules = {}) {
     ),
   };
 }
+
+export function validateSelectedCategories(values, rules = {}) {
+  const metadataRules = rules.metadata || {};
+  const allowedCategories = metadataRules.imageCategories || [];
+  const maxCategories = metadataRules.categoryMaxCount || 2;
+
+  if (!Array.isArray(values)) {
+    return { valid: false, error: 'Categories must be an array' };
+  }
+
+  if (values.length < 1 || values.length > maxCategories) {
+    return {
+      valid: false,
+      error: `Select between 1 and ${maxCategories} categories`,
+    };
+  }
+
+  const canonicalCategories = new Map(
+    allowedCategories.map((category) => [category.toLowerCase(), category]),
+  );
+  const categories = values.map((value) =>
+    canonicalCategories.get(String(value || '').trim().toLowerCase()),
+  );
+
+  if (categories.some((category) => !category)) {
+    return { valid: false, error: 'One or more categories are not supported' };
+  }
+
+  if (new Set(categories).size !== categories.length) {
+    return { valid: false, error: 'Category 1 and Category 2 must be different' };
+  }
+
+  return { valid: true, categories };
+}

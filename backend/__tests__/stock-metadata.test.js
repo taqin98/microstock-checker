@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeStockMetadata } from '../utils/stock-metadata.js';
+import {
+  normalizeStockMetadata,
+  validateSelectedCategories,
+} from '../utils/stock-metadata.js';
 
 const rules = {
   metadata: {
@@ -33,5 +36,15 @@ describe('Stock metadata normalization', () => {
 
     assert.equal(metadata.description, 'Autumn basket');
     assert.deepEqual(metadata.categories, []);
+  });
+
+  it('validates and canonicalizes manual category selections', () => {
+    assert.deepEqual(validateSelectedCategories(['nature', 'Objects'], rules), {
+      valid: true,
+      categories: ['Nature', 'Objects'],
+    });
+    assert.equal(validateSelectedCategories(['Nature', 'Nature'], rules).valid, false);
+    assert.equal(validateSelectedCategories(['Invalid'], rules).valid, false);
+    assert.equal(validateSelectedCategories([], rules).valid, false);
   });
 });

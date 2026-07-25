@@ -3,7 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { StatusBadge, FileTypeBadge } from '../components/StatusBadge';
 import { JobProgress } from '../components/JobProgress';
 import { IssueExplanation } from '../components/IssueExplanation';
-import { getJobDetail, getPreviewUrl, deleteJob, recheckJob } from '../api/client';
+import {
+  getJobDetail,
+  getPreviewUrl,
+  deleteJob,
+  recheckJob,
+  updateMetadataCategories,
+} from '../api/client';
+import { CategorySettings } from '../components/CategorySettings';
 
 const CHECKER_LABELS = {
   svg: { label: 'SVG Check', icon: '📐' },
@@ -174,6 +181,14 @@ export default function Detail() {
     }
   };
 
+  const handleSaveCategories = async (categories) => {
+    const result = await updateMetadataCategories(id, categories);
+    setJob((current) => ({
+      ...current,
+      metadata_categories: result.categories,
+    }));
+  };
+
   if (loading) {
     return (
       <div className="page">
@@ -212,6 +227,8 @@ export default function Detail() {
     processing: 'Pemeriksaan sedang berjalan. Hasil akan diperbarui otomatis.',
     error: 'Pemeriksaan berhenti karena kendala teknis. Periksa aktivitas lalu jalankan pemeriksaan ulang.',
   }[resultStatus];
+  const aiResult = job.results?.find((result) => result.checker_type === 'ai_content');
+  const categoryOptions = job.metadata_options?.image_categories || [];
 
   return (
     <div className="page detail-page">
@@ -281,6 +298,15 @@ export default function Detail() {
             )}
           </div>
         </details>
+      )}
+
+      {job.file_type === 'eps' && job.status === 'done' && categoryOptions.length > 0 && (
+        <CategorySettings
+          categories={categoryOptions}
+          savedCategories={job.metadata_categories || []}
+          suggestedCategories={aiResult?.info?.suggestedCategories || []}
+          onSave={handleSaveCategories}
+        />
       )}
 
       <div className="check-results">

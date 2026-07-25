@@ -17,13 +17,15 @@ import {
   getJobsWithResults,
   addAssetLog,
   resetAssetForRecheck,
+  updateAssetMetadataCategories,
 } from './db/database.js';
-import { getAvailablePlatforms } from './rules/loader.js';
+import { getAvailablePlatforms, getRules } from './rules/loader.js';
 import { createLogger } from './utils/logger.js';
 import {
   findEpsPreviewPath,
   getEpsPreviewCandidates,
 } from './utils/eps-preview.js';
+import { validateSelectedCategories } from './utils/stock-metadata.js';
 
 dotenv.config();
 
@@ -166,12 +168,42 @@ app.get('/api/jobs/:id', (req, res) => {
 
   const hasErrors = results.some((r) => r.errors.length > 0);
   const hasWarnings = results.some((r) => r.warnings.length > 0);
+  const rules = getRules(asset.platform);
 
   res.json({
     ...asset,
     results,
+    metadata_options: {
+      image_categories: rules.metadata?.imageCategories || [],
+      max_categories: rules.metadata?.categoryMaxCount || 2,
+    },
     overallResult: asset.status === 'done' ? (hasErrors ? 'fail' : hasWarnings ? 'warning' : 'pass') : null,
   });
+});
+
+app.patch('/api/jobs/:id/metadata-categories', (req, res) => {
+  const asset = getAsset(req.params.id);
+  if (!asset) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  if (asset.file_type !== 'eps') {
+    return res.status(400).json({ error: 'Category settings are currently available for EPS files only' });
+  }
+
+  if (asset.status !== 'done') {
+    return res.status(409).json({ error: 'Wait until all EPS checks are complete' });
+  }
+
+  const validation = validateSelectedCategories(req.body.categories, getRules(asset.platform));
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  updateAssetMetadataCategories(asset.id, validation.categories);
+  addAssetLog(asset.id, `Metadata categories saved: ${validation.categories.join(', ')}`);
+
+  return res.json({ success: true, categories: validation.categories });
 });
 
 // Serve uploaded file for preview

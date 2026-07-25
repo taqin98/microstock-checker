@@ -72,8 +72,11 @@ export function createShutterstockRow(job) {
       .map((keyword) => String(keyword).trim())
       .filter(Boolean),
   )].slice(0, 50).join(',');
+  const selectedCategories = job.metadata_categories?.length > 0
+    ? job.metadata_categories
+    : info.suggestedCategories || [];
   const categories = [...new Set(
-    (info.suggestedCategories || [])
+    selectedCategories
       .map((category) => CATEGORY_LOOKUP.get(String(category).toLowerCase()))
       .filter(Boolean),
   )].slice(0, 2).join(',');
@@ -101,8 +104,10 @@ export function countJobsWithoutAiMetadata(jobs) {
   return jobs.filter((job) => {
     const aiResult = getAiResult(job);
     const info = aiResult?.info;
+    const hasCategories = job.metadata_categories?.length > 0
+      || info?.suggestedCategories?.length > 0;
     return !(info?.suggestedDescription || info?.suggestedTitle)
       || !info?.suggestedKeywords?.length
-      || !info?.suggestedCategories?.length;
+      || !hasCategories;
   }).length;
 }

@@ -76,4 +76,13 @@ describe('Shutterstock CSV export', () => {
     assert.equal(row[2].split(',').length, 50);
     assert.equal(row[3], 'Nature,Objects');
   });
+
+  it('prefers manually saved categories over AI suggestions', () => {
+    const row = createShutterstockRow({
+      ...job,
+      metadata_categories: ['Arts', 'Holidays'],
+    });
+
+    assert.equal(row[3], 'Arts,Holidays');
+  });
 });
