@@ -30,5 +30,38 @@
     "suggestKeywords": true,
     "maxKeywords": 50,
     "flagThreshold": "medium"
+  },
+  "metadata": {
+    "descriptionMaxLength": 200,
+    "keywordMaxCount": 50,
+    "categoryMaxCount": 2,
+    "imageCategories": [
+      "Abstract",
+      "Animals/Wildlife",
+      "Arts",
+      "Backgrounds/Textures",
+      "Beauty/Fashion",
+      "Buildings/Landmarks",
+      "Business/Finance",
+      "Celebrities",
+      "Education",
+      "Food and drink",
+      "Healthcare/Medical",
+      "Holidays",
+      "Industrial",
+      "Interiors",
+      "Miscellaneous",
+      "Nature",
+      "Objects",
+      "Parks/Outdoor",
+      "People",
+      "Religion",
+      "Science",
+      "Signs/Symbols",
+      "Sports/Recreation",
+      "Technology",
+      "Transportation",
+      "Vintage"
+    ]
   }
 }

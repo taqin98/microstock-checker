@@ -4,6 +4,11 @@ import { ResultTable } from '../components/ResultTable';
 import { usePolling } from '../hooks/usePolling';
 import { deleteAllJobs, deleteJob, getJobs } from '../api/client';
 import { useToast } from '../components/Toast';
+import { ExportCsvMenu } from '../components/ExportCsvMenu';
+import {
+  countJobsWithoutAiMetadata,
+  createShutterstockCsv,
+} from '../utils/shutterstockCsv';
 
 const FILTERS = ['all', 'pass', 'warning', 'fail', 'pending'];
 const FILTER_LABELS = {
@@ -145,40 +150,39 @@ export default function Results() {
     };
   }, [jobs]);
 
-  const exportCsv = (jobsToExport = visibleJobs) => {
+  const exportCsv = (platform, jobsToExport = visibleJobs) => {
     if (jobsToExport.length === 0) {
-      addToast('No results to export', 'warning');
+      addToast('Tidak ada hasil untuk diekspor', 'warning');
       return;
     }
 
-    const headers = ['Filename', 'Platform', 'Type', 'Status', 'Errors', 'Warnings', 'AI Keywords'];
-    const rows = jobsToExport.map(job => {
-      const errCount = job.results?.reduce((sum, r) => sum + (r.errors?.length || 0), 0) || 0;
-      const warnCount = job.results?.reduce((sum, r) => sum + (r.warnings?.length || 0), 0) || 0;
-      const aiResult = job.results?.find(r => r.checker_type === 'ai_content');
-      const keywords = aiResult?.info?.suggestedKeywords?.join('; ') || '';
-      
-      return [
-        `"${job.original_name}"`,
-        job.platform,
-        job.file_type,
-        job.overallResult || job.status,
-        errCount,
-        warnCount,
-        `"${keywords}"`
-      ].join(',');
-    });
+    const platformJobs = jobsToExport.filter((job) => job.platform === platform);
+    if (platformJobs.length === 0) {
+      addToast(`Tidak ada hasil ${platform} untuk diekspor`, 'warning');
+      return;
+    }
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "microstock_results.csv");
+    const csv = createShutterstockCsv(platformJobs);
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = 'shutterstock_content_upload.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    addToast('Results exported to CSV', 'success');
+    URL.revokeObjectURL(downloadUrl);
+
+    const incompleteCount = countJobsWithoutAiMetadata(platformJobs);
+    if (incompleteCount > 0) {
+      addToast(
+        `CSV Shutterstock diekspor; ${incompleteCount} file belum memiliki metadata AI lengkap`,
+        'warning',
+      );
+      return;
+    }
+
+    addToast(`${platformJobs.length} metadata Shutterstock berhasil diekspor`, 'success');
   };
 
   if (loading && !jobs) {
@@ -215,9 +219,10 @@ export default function Results() {
             >
               {deletingAll ? <><span className="spinner" /> Menghapus...</> : 'Hapus semua'}
             </button>
-            <button className="btn btn--ghost" onClick={() => exportCsv()} disabled={visibleJobs.length === 0}>
-              ↓ Ekspor CSV
-            </button>
+            <ExportCsvMenu
+              disabled={visibleJobs.length === 0}
+              onExport={(platform) => exportCsv(platform)}
+            />
             <button className="btn btn--primary" onClick={() => navigate('/')}>
               + Periksa file lain
             </button>
@@ -270,7 +275,11 @@ export default function Results() {
             <button className="bulk-action-bar__clear" onClick={() => setSelectedIds(new Set())}>Batalkan pilihan</button>
           </div>
           <div>
-            <button className="btn btn--ghost btn--sm" onClick={() => exportCsv(selectedJobs)}>↓ Ekspor pilihan</button>
+            <ExportCsvMenu
+              label="↓ Ekspor pilihan"
+              size="sm"
+              onExport={(platform) => exportCsv(platform, selectedJobs)}
+            />
             <button className="btn btn--danger btn--sm" onClick={handleDeleteSelected}>Hapus pilihan</button>
           </div>
         </div>

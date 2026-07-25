@@ -36,7 +36,7 @@ function AssetPreview({ src, alt }) {
 
 function InfoGrid({ info }) {
   const entries = Object.entries(info).filter(([key]) =>
-    !['suggestedTitle', 'suggestedKeywords', 'fromCache', 'skipped', 'reason', 'previewPath'].includes(key)
+    !['suggestedTitle', 'suggestedDescription', 'suggestedKeywords', 'suggestedCategories', 'fromCache', 'skipped', 'reason', 'previewPath'].includes(key)
   );
   if (entries.length === 0) return null;
 
@@ -341,6 +341,18 @@ export default function Detail() {
                         <span className="ai-suggestions__label">Saran judul</span>
                         <p className="ai-suggestions__value">{result.info.suggestedTitle}</p>
                       </div>
+                      {result.info.suggestedDescription && (
+                        <div className="ai-title-suggestion">
+                          <span className="ai-suggestions__label">Deskripsi Shutterstock</span>
+                          <p className="ai-suggestions__value">{result.info.suggestedDescription}</p>
+                        </div>
+                      )}
+                      {result.info.suggestedCategories?.length > 0 && (
+                        <div className="ai-title-suggestion">
+                          <span className="ai-suggestions__label">Kategori Shutterstock</span>
+                          <p className="ai-suggestions__value">{result.info.suggestedCategories.join(', ')}</p>
+                        </div>
+                      )}
                       {result.info.suggestedKeywords?.length > 0 && (
                         <KeywordChips keywords={result.info.suggestedKeywords} />
                       )}

@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { getAiCache, setAiCache, getAiUsageToday, incrementAiUsage } from '../db/database.js';
 import { createLogger } from '../utils/logger.js';
+import { normalizeStockMetadata } from '../utils/stock-metadata.js';
 
 dotenv.config();
 
@@ -11,6 +12,7 @@ const log = createLogger('ai-content');
 
 const AI_DAILY_LIMIT = parseInt(process.env.AI_DAILY_LIMIT || '500', 10);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const AI_CACHE_VERSION = 'metadata-v2';
 
 const RESPONSE_SCHEMA = {
   type: 'object',
@@ -28,14 +30,22 @@ const RESPONSE_SCHEMA = {
     poorQuality: { type: 'boolean' },
     qualityDetails: { type: 'string', nullable: true },
     suggestedTitle: { type: 'string' },
+    suggestedDescription: { type: 'string' },
     suggestedKeywords: { type: 'array', items: { type: 'string' } },
+    suggestedCategories: { type: 'array', items: { type: 'string' } },
     confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
   },
-  required: ['trademarkDetected', 'intellectualPropertyConfidence', 'sensitiveContent', 'isAiGenerated', 'aiGeneratedConfidence', 'similarContentRisk', 'poorQuality', 'suggestedTitle', 'suggestedKeywords', 'confidence'],
+  required: ['trademarkDetected', 'intellectualPropertyConfidence', 'sensitiveContent', 'isAiGenerated', 'aiGeneratedConfidence', 'similarContentRisk', 'poorQuality', 'suggestedTitle', 'suggestedDescription', 'suggestedKeywords', 'suggestedCategories', 'confidence'],
 };
 
 function buildPrompt(rules = {}) {
   const maxKeywords = rules.aiContent?.maxKeywords || 50;
+  const metadataRules = rules.metadata || {};
+  const maxDescriptionLength = metadataRules.descriptionMaxLength || 200;
+  const categories = metadataRules.imageCategories || [];
+  const categoryInstruction = categories.length > 0
+    ? `Choose one or two categories from this exact list only: ${categories.join(', ')}.`
+    : 'Return an empty array because this platform has no configured category list.';
   const aiPolicy = rules.aiContent?.prohibitAiGenerated
     ? 'This platform prohibits AI-generated content. Detect it carefully and report concrete visual evidence.'
     : 'This platform may accept AI-generated content, but it must still be identified accurately.';
@@ -58,7 +68,9 @@ Analyze this image and return ONLY a JSON object with the following structure:
   "poorQuality": boolean — true if the image has bad lighting, blurry focus, poor composition, or overall amateur execution,
   "qualityDetails": string or null — explain the quality issues,
   "suggestedTitle": string — a concise, highly descriptive, commercial title suitable for microstock listing (in English),
+  "suggestedDescription": string — a unique, detailed English description no longer than ${maxDescriptionLength} characters,
   "suggestedKeywords": array of strings — up to ${maxKeywords} highly relevant keywords for microstock search (in English, lowercase),
+  "suggestedCategories": array of strings — ${categoryInstruction},
   "confidence": "low" | "medium" | "high" — your confidence level in the analysis
 }
 
@@ -67,7 +79,8 @@ CRITICAL RULES:
 2. ${aiPolicy}
 3. Do not classify content as AI-generated solely because it is an illustration or vector. Require visual evidence and use low confidence when evidence is ambiguous.
 4. For AI-generated detection, inspect hands, faces, text, repeated motifs, background details, edges, symmetry, perspective, and structural logic.
-5. Do NOT include brand names in suggestedKeywords.`;
+5. Do NOT include brand names in suggestedKeywords.
+6. ${categoryInstruction}`;
 }
 
 function meetsConfidenceThreshold(confidence, threshold = 'medium') {
@@ -75,9 +88,14 @@ function meetsConfidenceThreshold(confidence, threshold = 'medium') {
   return (levels[confidence] || 0) >= (levels[threshold] || levels.medium);
 }
 
-function hashFile(filePath) {
+function hashFile(filePath, rules) {
   const content = fs.readFileSync(filePath);
-  return crypto.createHash('sha256').update(content).digest('hex');
+  return crypto.createHash('sha256')
+    .update(AI_CACHE_VERSION)
+    .update(rules.platform || 'unknown-platform')
+    .update(JSON.stringify(rules.metadata || {}))
+    .update(content)
+    .digest('hex');
 }
 
 export async function checkAiContent(filePath, rules = {}, options = {}) {
@@ -100,7 +118,7 @@ export async function checkAiContent(filePath, rules = {}, options = {}) {
   }
 
   // Check cache
-  const fileHash = hashFile(filePath);
+  const fileHash = hashFile(filePath, rules);
   const cached = options.forceRefresh ? null : getAiCache(fileHash);
   if (cached) {
     log.info('Using cached AI result', { hash: fileHash.slice(0, 12) });
@@ -190,9 +208,12 @@ function mapAiResultToCheckerOutput(aiResult, rules = {}, meta = {}) {
   const warnings = [];
   const intellectualPropertyConfidence = aiResult.intellectualPropertyConfidence || aiResult.confidence || 'low';
   const aiGeneratedConfidence = aiResult.aiGeneratedConfidence || aiResult.confidence || 'low';
+  const metadata = normalizeStockMetadata(aiResult, rules);
   const info = {
-    suggestedTitle: aiResult.suggestedTitle,
-    suggestedKeywords: aiResult.suggestedKeywords,
+    suggestedTitle: metadata.title,
+    suggestedDescription: metadata.description,
+    suggestedKeywords: metadata.keywords,
+    suggestedCategories: metadata.categories,
     confidence: aiResult.confidence,
     fromCache: meta.fromCache || false,
     intellectualPropertyDetected: Boolean(aiResult.trademarkDetected),

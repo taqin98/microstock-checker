@@ -735,6 +735,68 @@ a {
   font-size: 0.8rem;
 }
 
+.export-menu {
+  position: relative;
+}
+
+.export-menu__chevron {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  transition: transform var(--transition-fast);
+}
+
+.export-menu [aria-expanded="true"] .export-menu__chevron {
+  transform: rotate(180deg);
+}
+
+.export-menu__list {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  padding: 0.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.export-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-menu__item:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+}
+
+.export-menu__item small {
+  color: var(--accent-primary);
+  font-size: 0.68rem;
+}
+
+.export-menu__item:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.export-menu__item:disabled small {
+  color: var(--text-tertiary);
+}
+
 .btn--lg {
   padding: 0.85rem 2rem;
   font-size: 1rem;
@@ -1745,6 +1807,14 @@ a {
   .bulk-action-bar > div:last-child .btn {
     flex: 1;
     justify-content: center;
+  }
+
+  .bulk-action-bar > div:last-child .export-menu {
+    flex: 1;
+  }
+
+  .bulk-action-bar > div:last-child .export-menu .btn {
+    width: 100%;
   }
 
   .issue-explanation__detail,
