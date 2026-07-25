@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const EXPORT_PLATFORMS = [
   { id: 'shutterstock', label: 'Shutterstock', available: true },
-  { id: 'adobestock', label: 'Adobe Stock', available: false },
+  { id: 'adobestock', label: 'Adobe Stock', available: true },
   { id: 'freepik', label: 'Freepik', available: false },
   { id: 'dreamstime', label: 'Dreamstime', available: false },
   { id: 'pond5', label: 'Pond5', available: false },

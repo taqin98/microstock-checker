@@ -1616,6 +1616,11 @@ a {
   margin-top: 1rem;
 }
 
+.category-settings__fields--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 520px;
+}
+
 .category-settings__fields label {
   display: flex;
   flex-direction: column;

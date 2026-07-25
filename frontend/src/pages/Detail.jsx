@@ -303,6 +303,8 @@ export default function Detail() {
       {job.file_type === 'eps' && job.status === 'done' && categoryOptions.length > 0 && (
         <CategorySettings
           categories={categoryOptions}
+          maxCategories={job.metadata_options?.max_categories || 2}
+          platformLabel={job.metadata_options?.platform_label || job.platform}
           savedCategories={job.metadata_categories || []}
           suggestedCategories={aiResult?.info?.suggestedCategories || []}
           onSave={handleSaveCategories}

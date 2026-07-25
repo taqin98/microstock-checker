@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 export function CategorySettings({
   categories,
+  maxCategories = 2,
+  platformLabel,
   savedCategories,
   suggestedCategories,
   onSave,
@@ -22,11 +24,14 @@ export function CategorySettings({
       : (suggestedCategories || []).filter((category) => categories.includes(category));
 
     setPrimaryCategory(defaults[0] || '');
-    setSecondaryCategory(defaults[1] || '');
-  }, [categories, savedCategories, suggestedCategories]);
+    setSecondaryCategory(maxCategories > 1 ? defaults[1] || '' : '');
+  }, [categories, maxCategories, savedCategories, suggestedCategories]);
 
   const handleSave = async () => {
-    const selectedCategories = [primaryCategory, secondaryCategory].filter(Boolean);
+    const selectedCategories = [
+      primaryCategory,
+      ...(maxCategories > 1 ? [secondaryCategory] : []),
+    ].filter(Boolean);
     setSaving(true);
     setMessage('');
 
@@ -44,16 +49,20 @@ export function CategorySettings({
     <section className="category-settings glass-card" aria-labelledby="category-settings-title">
       <div className="category-settings__header">
         <div>
-          <span className="page__eyebrow">Metadata Shutterstock</span>
+          <span className="page__eyebrow">Metadata {platformLabel}</span>
           <h2 id="category-settings-title">Pilih kategori</h2>
-          <p>Kategori pertama wajib. Kategori kedua opsional.</p>
+          <p>
+            {maxCategories > 1
+              ? 'Kategori pertama wajib. Kategori kedua opsional.'
+              : 'Pilih satu kategori untuk file ini.'}
+          </p>
         </div>
         {savedCategories?.length > 0 && (
           <span className="category-settings__saved">Tersimpan</span>
         )}
       </div>
 
-      <div className="category-settings__fields">
+      <div className={`category-settings__fields ${maxCategories === 1 ? 'category-settings__fields--single' : ''}`}>
         <label>
           <span>Kategori 1 <strong>*</strong></span>
           <select
@@ -73,24 +82,26 @@ export function CategorySettings({
           </select>
         </label>
 
-        <label>
-          <span>Kategori 2 <small>(opsional)</small></span>
-          <select
-            className="input"
-            value={secondaryCategory}
-            onChange={(event) => {
-              setSecondaryCategory(event.target.value);
-              setMessage('');
-            }}
-          >
-            <option value="">Tanpa kategori kedua</option>
-            {categories
-              .filter((category) => category !== primaryCategory)
-              .map((category) => (
-                <option value={category} key={category}>{category}</option>
-              ))}
-          </select>
-        </label>
+        {maxCategories > 1 && (
+          <label>
+            <span>Kategori 2 <small>(opsional)</small></span>
+            <select
+              className="input"
+              value={secondaryCategory}
+              onChange={(event) => {
+                setSecondaryCategory(event.target.value);
+                setMessage('');
+              }}
+            >
+              <option value="">Tanpa kategori kedua</option>
+              {categories
+                .filter((category) => category !== primaryCategory)
+                .map((category) => (
+                  <option value={category} key={category}>{category}</option>
+                ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <div className="category-settings__footer">

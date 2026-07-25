@@ -26,7 +26,35 @@
     "checkTrademark": true,
     "checkSensitiveContent": true,
     "suggestKeywords": true,
-    "maxKeywords": 50,
+    "maxKeywords": 49,
     "flagThreshold": "medium"
+  },
+  "metadata": {
+    "titleMaxLength": 200,
+    "keywordMaxCount": 49,
+    "categoryMaxCount": 1,
+    "imageCategories": [
+      "Animals",
+      "Buildings and Architecture",
+      "Business",
+      "Drinks",
+      "The Environment",
+      "States of Mind",
+      "Food",
+      "Graphic Resources",
+      "Hobbies and Leisure",
+      "Industry",
+      "Landscapes",
+      "Lifestyle",
+      "People",
+      "Plants and Flowers",
+      "Culture and Religion",
+      "Science",
+      "Social Issues",
+      "Sports",
+      "Technology",
+      "Transport",
+      "Travel"
+    ]
   }
 }

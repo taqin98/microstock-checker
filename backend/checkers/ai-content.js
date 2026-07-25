@@ -41,10 +41,12 @@ const RESPONSE_SCHEMA = {
 function buildPrompt(rules = {}) {
   const maxKeywords = rules.aiContent?.maxKeywords || 50;
   const metadataRules = rules.metadata || {};
+  const maxTitleLength = metadataRules.titleMaxLength || 200;
   const maxDescriptionLength = metadataRules.descriptionMaxLength || 200;
   const categories = metadataRules.imageCategories || [];
+  const maxCategories = metadataRules.categoryMaxCount || 2;
   const categoryInstruction = categories.length > 0
-    ? `Choose one or two categories from this exact list only: ${categories.join(', ')}.`
+    ? `Choose ${maxCategories === 1 ? 'exactly one category' : `one or two categories, with at most ${maxCategories}`} from this exact list only: ${categories.join(', ')}.`
     : 'Return an empty array because this platform has no configured category list.';
   const aiPolicy = rules.aiContent?.prohibitAiGenerated
     ? 'This platform prohibits AI-generated content. Detect it carefully and report concrete visual evidence.'
@@ -67,7 +69,7 @@ Analyze this image and return ONLY a JSON object with the following structure:
   "similarContentDetails": string or null — explain why it's considered generic or spam-like,
   "poorQuality": boolean — true if the image has bad lighting, blurry focus, poor composition, or overall amateur execution,
   "qualityDetails": string or null — explain the quality issues,
-  "suggestedTitle": string — a concise, highly descriptive, commercial title suitable for microstock listing (in English),
+  "suggestedTitle": string — a concise, highly descriptive, commercial title suitable for microstock listing (in English), no longer than ${maxTitleLength} characters,
   "suggestedDescription": string — a unique, detailed English description no longer than ${maxDescriptionLength} characters,
   "suggestedKeywords": array of strings — up to ${maxKeywords} highly relevant keywords for microstock search (in English, lowercase),
   "suggestedCategories": array of strings — ${categoryInstruction},

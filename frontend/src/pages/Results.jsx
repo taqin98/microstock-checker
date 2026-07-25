@@ -9,6 +9,10 @@ import {
   countJobsWithIncompleteMetadata,
   createShutterstockCsv,
 } from '../utils/shutterstockCsv';
+import {
+  countAdobeStockJobsWithIncompleteMetadata,
+  createAdobeStockCsv,
+} from '../utils/adobeStockCsv';
 
 const FILTERS = ['all', 'pass', 'warning', 'fail', 'pending'];
 const FILTER_LABELS = {
@@ -17,6 +21,20 @@ const FILTER_LABELS = {
   warning: 'Perlu ditinjau',
   fail: 'Harus diperbaiki',
   pending: 'Diproses',
+};
+const CSV_EXPORTERS = {
+  shutterstock: {
+    createCsv: createShutterstockCsv,
+    countIncomplete: countJobsWithIncompleteMetadata,
+    filename: 'shutterstock_content_upload.csv',
+    label: 'Shutterstock',
+  },
+  adobestock: {
+    createCsv: createAdobeStockCsv,
+    countIncomplete: countAdobeStockJobsWithIncompleteMetadata,
+    filename: 'adobe_stock_content_upload.csv',
+    label: 'Adobe Stock',
+  },
 };
 
 export default function Results() {
@@ -156,33 +174,39 @@ export default function Results() {
       return;
     }
 
+    const exporter = CSV_EXPORTERS[platform];
+    if (!exporter) {
+      addToast('Format CSV platform belum tersedia', 'warning');
+      return;
+    }
+
     const platformJobs = jobsToExport.filter((job) => job.platform === platform);
     if (platformJobs.length === 0) {
       addToast(`Tidak ada hasil ${platform} untuk diekspor`, 'warning');
       return;
     }
 
-    const csv = createShutterstockCsv(platformJobs);
+    const csv = exporter.createCsv(platformJobs);
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
     const downloadUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.download = 'shutterstock_content_upload.csv';
+    link.download = exporter.filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
 
-    const incompleteCount = countJobsWithIncompleteMetadata(platformJobs);
+    const incompleteCount = exporter.countIncomplete(platformJobs);
     if (incompleteCount > 0) {
       addToast(
-        `CSV Shutterstock diekspor; ${incompleteCount} file belum memiliki metadata lengkap`,
+        `CSV ${exporter.label} diekspor; ${incompleteCount} file belum memiliki metadata lengkap`,
         'warning',
       );
       return;
     }
 
-    addToast(`${platformJobs.length} metadata Shutterstock berhasil diekspor`, 'success');
+    addToast(`${platformJobs.length} metadata ${exporter.label} berhasil diekspor`, 'success');
   };
 
   if (loading && !jobs) {

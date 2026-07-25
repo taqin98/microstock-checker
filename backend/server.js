@@ -176,6 +176,7 @@ app.get('/api/jobs/:id', (req, res) => {
     metadata_options: {
       image_categories: rules.metadata?.imageCategories || [],
       max_categories: rules.metadata?.categoryMaxCount || 2,
+      platform_label: rules.label,
     },
     overallResult: asset.status === 'done' ? (hasErrors ? 'fail' : hasWarnings ? 'warning' : 'pass') : null,
   });
