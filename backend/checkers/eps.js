@@ -6,6 +6,11 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
 import { createLogger } from '../utils/logger.js';
+import {
+  findIllustratorExportPath,
+  getIllustratorExportCandidates,
+  getEpsPreviewPath,
+} from '../utils/eps-preview.js';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,7 +66,8 @@ export async function checkEps(filePath, rules = {}) {
 
   const epsRules = rules.eps || {};
   const outputPath = path.join(os.tmpdir(), `eps_result_${uuidv4()}.json`);
-  const previewPath = `${filePath}.preview.jpg`;
+  const previewPath = getEpsPreviewPath(filePath);
+  const exportPreviewPath = path.join(os.tmpdir(), `eps_preview_${uuidv4()}.jpg`);
 
   // Verify file exists
   if (!fs.existsSync(filePath)) {
@@ -75,7 +81,7 @@ export async function checkEps(filePath, rules = {}) {
     try {
       log.info(`Attempt ${attempt}/${MAX_RETRIES}`);
 
-      const jsxContent = buildJsxScript(filePath, outputPath, previewPath);
+      const jsxContent = buildJsxScript(filePath, outputPath, exportPreviewPath);
       await runIllustratorScript(jsxContent);
 
       // Read result file
@@ -104,27 +110,18 @@ export async function checkEps(filePath, rules = {}) {
     }
   }
 
-  // Handle Illustrator appending suffixes like preview_xxx-01.jpg or preview_xxx_01.jpg
   let actualPreviewPath = null;
   if (result && result.previewExported) {
-    const dir = path.dirname(previewPath);
-    const base = path.basename(previewPath, '.jpg');
-    const possibleNames = [
-      previewPath,
-      path.join(dir, `${base}-01.jpg`),
-      path.join(dir, `${base}_01.jpg`)
-    ];
-    for (const p of possibleNames) {
-      if (fs.existsSync(p)) {
-        actualPreviewPath = p;
-        break;
-      }
-    }
-
-    if (actualPreviewPath && actualPreviewPath !== previewPath) {
-      fs.renameSync(actualPreviewPath, previewPath);
+    const exportedPreviewPath = findIllustratorExportPath(exportPreviewPath);
+    if (exportedPreviewPath) {
+      fs.copyFileSync(exportedPreviewPath, previewPath);
+      try { fs.unlinkSync(exportedPreviewPath); } catch { /* ignore */ }
       actualPreviewPath = previewPath;
     }
+  }
+
+  for (const candidate of getIllustratorExportCandidates(exportPreviewPath)) {
+    try { fs.unlinkSync(candidate); } catch { /* ignore */ }
   }
 
   if (!result) {

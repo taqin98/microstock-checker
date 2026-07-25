@@ -20,6 +20,10 @@ import {
 } from './db/database.js';
 import { getAvailablePlatforms } from './rules/loader.js';
 import { createLogger } from './utils/logger.js';
+import {
+  findEpsPreviewPath,
+  getEpsPreviewCandidates,
+} from './utils/eps-preview.js';
 
 dotenv.config();
 
@@ -200,10 +204,10 @@ app.get('/api/jobs/:id/preview', (req, res) => {
   }
 
   const previewPath = asset.file_type === 'eps'
-    ? `${asset.file_path}.preview.jpg`
+    ? findEpsPreviewPath(asset.file_path)
     : asset.file_path;
 
-  if (!fs.existsSync(previewPath)) {
+  if (!previewPath || !fs.existsSync(previewPath)) {
     return res.status(404).json({ error: 'Preview not found on disk' });
   }
 
@@ -223,7 +227,9 @@ app.delete('/api/jobs', (req, res) => {
 
   for (const asset of assets) {
     try { fs.unlinkSync(asset.file_path); } catch { /* file may already be gone */ }
-    try { fs.unlinkSync(`${asset.file_path}.preview.jpg`); } catch { /* preview may not exist */ }
+    for (const previewPath of getEpsPreviewCandidates(asset.file_path)) {
+      try { fs.unlinkSync(previewPath); } catch { /* preview may not exist */ }
+    }
   }
 
   const result = deleteAllAssets();
@@ -239,7 +245,9 @@ app.delete('/api/jobs/:id', (req, res) => {
 
   // Remove file from disk
   try { fs.unlinkSync(asset.file_path); } catch { /* file may already be gone */ }
-  try { fs.unlinkSync(`${asset.file_path}.preview.jpg`); } catch { /* preview may not exist */ }
+  for (const previewPath of getEpsPreviewCandidates(asset.file_path)) {
+    try { fs.unlinkSync(previewPath); } catch { /* preview may not exist */ }
+  }
 
   deleteAsset(req.params.id);
   res.json({ success: true });
