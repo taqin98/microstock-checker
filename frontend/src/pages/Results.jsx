@@ -6,7 +6,7 @@ import { deleteAllJobs, deleteJob, getJobs } from '../api/client';
 import { useToast } from '../components/Toast';
 import { ExportCsvMenu } from '../components/ExportCsvMenu';
 import {
-  countJobsWithoutAiMetadata,
+  countJobsWithIncompleteMetadata,
   createShutterstockCsv,
 } from '../utils/shutterstockCsv';
 
@@ -173,10 +173,10 @@ export default function Results() {
     document.body.removeChild(link);
     URL.revokeObjectURL(downloadUrl);
 
-    const incompleteCount = countJobsWithoutAiMetadata(platformJobs);
+    const incompleteCount = countJobsWithIncompleteMetadata(platformJobs);
     if (incompleteCount > 0) {
       addToast(
-        `CSV Shutterstock diekspor; ${incompleteCount} file belum memiliki metadata AI lengkap`,
+        `CSV Shutterstock diekspor; ${incompleteCount} file belum memiliki metadata lengkap`,
         'warning',
       );
       return;

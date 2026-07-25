@@ -55,6 +55,24 @@ function getAiResult(job) {
   return job.results?.find((result) => result.checker_type === 'ai_content');
 }
 
+function getEpsResult(job) {
+  return job.results?.find((result) => result.checker_type === 'eps');
+}
+
+function normalizeKeywords(values) {
+  const seen = new Set();
+
+  return (Array.isArray(values) ? values : [])
+    .map((keyword) => String(keyword).trim())
+    .filter((keyword) => {
+      const key = keyword.toLowerCase();
+      if (!keyword || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 50);
+}
+
 function hasSensitiveContent(aiResult) {
   return aiResult?.warnings?.some((warning) => warning.code === 'SENSITIVE_CONTENT')
     || aiResult?.errors?.some((error) => error.code === 'SENSITIVE_CONTENT')
@@ -63,18 +81,24 @@ function hasSensitiveContent(aiResult) {
 
 export function createShutterstockRow(job) {
   const aiResult = getAiResult(job);
-  const info = aiResult?.info || {};
-  const description = String(info.suggestedDescription || info.suggestedTitle || '')
+  const aiInfo = aiResult?.info || {};
+  const epsInfo = getEpsResult(job)?.info || {};
+  const description = String(
+    epsInfo.metadataDescription
+    || aiInfo.suggestedDescription
+    || aiInfo.suggestedTitle
+    || '',
+  )
     .trim()
     .slice(0, 200);
-  const keywords = [...new Set(
-    (info.suggestedKeywords || [])
-      .map((keyword) => String(keyword).trim())
-      .filter(Boolean),
-  )].slice(0, 50).join(',');
+  const keywords = normalizeKeywords(
+    epsInfo.metadataKeywords?.length > 0
+      ? epsInfo.metadataKeywords
+      : aiInfo.suggestedKeywords,
+  ).join(',');
   const selectedCategories = job.metadata_categories?.length > 0
     ? job.metadata_categories
-    : info.suggestedCategories || [];
+    : aiInfo.suggestedCategories || [];
   const categories = [...new Set(
     selectedCategories
       .map((category) => CATEGORY_LOOKUP.get(String(category).toLowerCase()))
@@ -100,14 +124,23 @@ export function createShutterstockCsv(jobs) {
     .join('\r\n');
 }
 
-export function countJobsWithoutAiMetadata(jobs) {
+export function countJobsWithIncompleteMetadata(jobs) {
   return jobs.filter((job) => {
     const aiResult = getAiResult(job);
-    const info = aiResult?.info;
+    const aiInfo = aiResult?.info;
+    const epsInfo = getEpsResult(job)?.info;
     const hasCategories = job.metadata_categories?.length > 0
-      || info?.suggestedCategories?.length > 0;
-    return !(info?.suggestedDescription || info?.suggestedTitle)
-      || !info?.suggestedKeywords?.length
+      || aiInfo?.suggestedCategories?.length > 0;
+    const hasDescription = Boolean(
+      epsInfo?.metadataDescription
+      || aiInfo?.suggestedDescription
+      || aiInfo?.suggestedTitle,
+    );
+    const hasKeywords = epsInfo?.metadataKeywords?.length > 0
+      || aiInfo?.suggestedKeywords?.length > 0;
+
+    return !hasDescription
+      || !hasKeywords
       || !hasCategories;
   }).length;
 }

@@ -11,6 +11,7 @@ import {
   getIllustratorExportCandidates,
   getEpsPreviewPath,
 } from '../utils/eps-preview.js';
+import { readEpsMetadata } from '../utils/eps-metadata.js';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -73,6 +74,11 @@ export async function checkEps(filePath, rules = {}) {
   if (!fs.existsSync(filePath)) {
     return { valid: false, errors: [{ code: 'FILE_NOT_FOUND', message: 'EPS file not found' }], warnings, info };
   }
+
+  const embeddedMetadata = readEpsMetadata(filePath);
+  if (embeddedMetadata.title) info.metadataTitle = embeddedMetadata.title;
+  if (embeddedMetadata.description) info.metadataDescription = embeddedMetadata.description;
+  if (embeddedMetadata.keywords.length > 0) info.metadataKeywords = embeddedMetadata.keywords;
 
   let result = null;
   let lastError = null;

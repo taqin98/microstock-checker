@@ -85,4 +85,43 @@ describe('Shutterstock CSV export', () => {
 
     assert.equal(row[3], 'Arts,Holidays');
   });
+
+  it('prefers embedded EPS metadata over AI metadata', () => {
+    const row = createShutterstockRow({
+      ...job,
+      results: [
+        ...job.results,
+        {
+          checker_type: 'eps',
+          info: {
+            metadataDescription: 'Description from EPS',
+            metadataKeywords: ['embedded', 'vector'],
+          },
+        },
+      ],
+    });
+
+    assert.equal(row[1], 'Description from EPS');
+    assert.equal(row[2], 'embedded,vector');
+  });
+
+  it('falls back per field when embedded EPS metadata is empty', () => {
+    const row = createShutterstockRow({
+      ...job,
+      results: [
+        ...job.results,
+        {
+          checker_type: 'eps',
+          info: {
+            metadataTitle: 'Title only',
+            metadataDescription: '',
+            metadataKeywords: [],
+          },
+        },
+      ],
+    });
+
+    assert.equal(row[1], 'Detailed autumn basket with "pumpkins"');
+    assert.equal(row[2], 'autumn,pumpkin');
+  });
 });
