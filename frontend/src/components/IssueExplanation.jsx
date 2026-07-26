@@ -1,4 +1,29 @@
 const ISSUE_GUIDANCE = {
+  AI_DAILY_QUOTA_EXHAUSTED: {
+    title: 'Kuota harian Gemini telah habis',
+    explanation: 'Penyedia AI menolak pemeriksaan karena batas permintaan harian untuk paket atau model saat ini sudah tercapai.',
+    action: 'Tunggu hingga kuota harian direset atau periksa paket dan billing Gemini, lalu jalankan Periksa ulang.',
+  },
+  AI_RATE_LIMITED: {
+    title: 'Batas permintaan Gemini sedang tercapai',
+    explanation: 'Terlalu banyak permintaan dikirim dalam waktu singkat sehingga pemeriksaan AI ditunda sementara.',
+    action: 'Tunggu sesuai waktu yang tercantum pada detail pemeriksaan, lalu jalankan Periksa ulang.',
+  },
+  AI_LIMIT_REACHED: {
+    title: 'Batas pemeriksaan AI aplikasi telah tercapai',
+    explanation: 'Jumlah pemeriksaan AI hari ini sudah mencapai batas harian yang dikonfigurasi pada aplikasi.',
+    action: 'Tunggu reset batas harian atau naikkan konfigurasi AI_DAILY_LIMIT jika kuota penyedia masih tersedia.',
+  },
+  AI_NOT_CONFIGURED: {
+    title: 'Gemini API belum dikonfigurasi',
+    explanation: 'Pemeriksaan AI dilewati karena aplikasi belum memiliki API key Gemini yang valid.',
+    action: 'Isi GEMINI_API_KEY pada konfigurasi backend, mulai ulang worker, lalu jalankan Periksa ulang.',
+  },
+  AI_CHECK_FAILED: {
+    title: 'Pemeriksaan AI gagal',
+    explanation: 'Gemini tidak berhasil menyelesaikan analisis setelah percobaan ulang, tetapi pemeriksaan teknis tetap valid.',
+    action: 'Periksa koneksi dan log worker, lalu jalankan Periksa ulang.',
+  },
   AI_GENERATED_CONTENT_PROHIBITED: {
     title: 'Terdeteksi sebagai konten buatan AI',
     explanation: 'Platform tujuan melarang konten yang dibuat seluruhnya atau sebagian menggunakan generative AI.',

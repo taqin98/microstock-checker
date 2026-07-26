@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import { getAiCache, setAiCache, getAiUsageToday, incrementAiUsage } from '../db/database.js';
+import { classifyAiApiError } from '../utils/ai-api-error.js';
 import { createLogger } from '../utils/logger.js';
 import { normalizeStockMetadata } from '../utils/stock-metadata.js';
 
@@ -140,6 +141,7 @@ export async function checkAiContent(filePath, rules = {}, options = {}) {
 
   // Call Gemini API with retry
   let aiResult = null;
+  let apiLimitFailure = null;
   const maxAttempts = 2;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -183,6 +185,18 @@ export async function checkAiContent(filePath, rules = {}, options = {}) {
 
       break;
     } catch (err) {
+      apiLimitFailure = classifyAiApiError(err);
+
+      if (apiLimitFailure) {
+        log.warn('Gemini API limit reached', {
+          type: apiLimitFailure.type,
+          retryAfterSeconds: apiLimitFailure.retryAfterSeconds,
+          quotaLimit: apiLimitFailure.quotaLimit,
+          model: apiLimitFailure.model,
+        });
+        break;
+      }
+
       log.error(`AI API attempt ${attempt} failed`, { error: err.message });
 
       if (attempt < maxAttempts) {
@@ -194,6 +208,50 @@ export async function checkAiContent(filePath, rules = {}, options = {}) {
   }
 
   if (!aiResult) {
+    if (apiLimitFailure?.type === 'daily_quota') {
+      const limitText = apiLimitFailure.quotaLimit
+        ? ` Batas paket saat ini adalah ${apiLimitFailure.quotaLimit} permintaan per hari.`
+        : '';
+
+      return {
+        valid: true,
+        errors: [],
+        warnings: [{
+          code: 'AI_DAILY_QUOTA_EXHAUSTED',
+          message: `Kuota harian Gemini telah habis.${limitText} Analisis AI dilewati, tetapi hasil pemeriksaan teknis tetap valid.`,
+        }],
+        info: {
+          skipped: true,
+          reason: 'provider_daily_quota',
+          retryAfterSeconds: apiLimitFailure.retryAfterSeconds,
+          quotaLimit: apiLimitFailure.quotaLimit,
+          model: apiLimitFailure.model,
+        },
+      };
+    }
+
+    if (apiLimitFailure?.type === 'rate_limit') {
+      const retryText = apiLimitFailure.retryAfterSeconds
+        ? ` Coba lagi dalam sekitar ${apiLimitFailure.retryAfterSeconds} detik.`
+        : ' Tunggu sebentar, lalu coba lagi.';
+
+      return {
+        valid: true,
+        errors: [],
+        warnings: [{
+          code: 'AI_RATE_LIMITED',
+          message: `Batas permintaan Gemini sedang tercapai.${retryText} Analisis AI dilewati, tetapi hasil pemeriksaan teknis tetap valid.`,
+        }],
+        info: {
+          skipped: true,
+          reason: 'provider_rate_limit',
+          retryAfterSeconds: apiLimitFailure.retryAfterSeconds,
+          quotaLimit: apiLimitFailure.quotaLimit,
+          model: apiLimitFailure.model,
+        },
+      };
+    }
+
     return {
       valid: true,
       errors: [],
